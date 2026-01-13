@@ -6,6 +6,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { userRouter } from "./componets/routes/user.routes.js";
+import { loginHistoryRouter } from "./componets/routes/loginHistory.routes.js";
 import connectDB, { checkConnection } from "./componets/db/db.js";
 import { OTPGenerator } from "./componets/utility/data.js";
 
@@ -65,6 +66,7 @@ app.get('/api/v1/health', (req, res) => {
 });
 
 app.use('/api/v1', userRouter)
+app.use('/api/v1', loginHistoryRouter)
 
 /*
 |--------------------------------------------------------------------------
