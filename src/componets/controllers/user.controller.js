@@ -11,17 +11,15 @@ import bcrypt from "bcrypt";
 export const accountCreate = async (req, res) => {
   try {
     const { email, name, password, username } = req.body;
-    /********* check filed validation ************ */
-    if (
-      [name, email, password, username].some(
-        (field) => !field || field.trim() === ""
-      )
-    ) {
+
+    /* 1. Field validation */
+    if ([name, email, password, username].some((field) => !field?.trim())) {
       return res
         .status(400)
         .json(ApiResponse(false, { error: "All fields are required" }));
     }
 
+    /* 2. Password validation */
     if (password.length < 6) {
       return res.status(400).json(
         ApiResponse(false, {
@@ -30,54 +28,61 @@ export const accountCreate = async (req, res) => {
       );
     }
 
-    const isUser = await UserModel.findOne({
-      $or: [{ email: email.toLowerCase(), username: username.toLowerCase() }],
+    /* 3. Normalize data */
+    const normalizedEmail = email.toLowerCase();
+    const normalizedUsername = username.toLowerCase();
+
+    /* 4. Check existing user (email OR username) */
+    const existingUser = await UserModel.findOne({
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
-    /************* Check user or not **************** */
-    if (isUser) {
-      // if user already exits
+    if (existingUser) {
       return res.status(409).json(
-        ApiResponse(false, "User with this email already exists", null, {
-          error: "Email or username already in use ",
+        ApiResponse(false, {
+          error: "Email or username already in use",
         })
       );
-    } else {
-      // if user not exits
-      const hashPassword = await bcrypt.hash(password, 10);
-
-      const newUser = await UserModel({
-        email,
-        password: hashPassword,
-        name,
-        username,
-        otp: OTPGenerator(),
-      });
-
-      newUser.save();
-      const user = {
-        _id: newUser._id,
-        email: newUser.email,
-        name: newUser.name,
-        username: newUser.username,
-      };
-      // send opt logic here (Reaming)
-
-      return res
-        .status(201)
-        .json(
-          ApiResponse(
-            true,
-            { message: "Account Created", send: "Opt sent Successfully" },
-            user
-          )
-        );
     }
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message,
+
+    /* 5. Hash password */
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    /* 6. Create user */
+    const newUser = await UserModel.create({
+      email: normalizedEmail,
+      password: hashedPassword,
+      name,
+      username: normalizedUsername,
+      otp: OTPGenerator(),
     });
+
+    /* 7. Response payload (never send password) */
+    const userResponse = {
+      _id: newUser._id,
+      email: newUser.email,
+      name: newUser.name,
+      username: newUser.username,
+    };
+
+    // TODO: Send OTP via email/SMS
+
+    return res.status(201).json(
+      ApiResponse(
+        true,
+        {
+          message: "Account created successfully",
+          otpStatus: "OTP sent",
+        },
+        userResponse
+      )
+    );
+  } catch (error) {
+    return res.status(500).json(
+      ApiResponse(false, {
+        error: error.message || "Internal Server Error",
+      })
+    );
   }
 };
 
@@ -189,58 +194,66 @@ export const resendOTP = async (request, response) => {
 export const loginViaPassword = async (req, res) => {
   try {
     const { inputValue, password } = req.body;
-    if ([inputValue, password].some((field) => !field || field.trim() === "")) {
+
+    // 1. Validate input
+    if (!inputValue || !password) {
       return res
         .status(400)
         .json(ApiResponse(false, { error: "All fields are required" }));
     }
 
-    const isUser = await UserModel.findOne({
+    // 2. Find user by email or username
+    const user = await UserModel.findOne({
       $or: [{ email: inputValue }, { username: inputValue }],
     });
 
-    if (!isUser)
-      return res.status(404).json(
-        ApiResponse(false, {
-          error: "User Not Found",
-        })
-      );
-
-    if (isUser) {
-      // match Password
-      if (bcrypt.compare(password, isUser?.password)) {
-        const token = await jwt.sign(
-          {
-            _id: isUser._id,
-            email: isUser.email,
-            role: isUser.role,
-            username: isUser.username,
-          },
-          process.env.JWT_SECRET_KEY,
-          { expiresIn: "7d" }
-        );
-        return res.status(200).json(
-          ApiResponse(
-            true,
-            { message: "Login Successfully" },
-            {
-              user: {
-                email: isUser.email,
-                name: isUser.name,
-                username: isUser.username,
-                token,
-              },
-            }
-          )
-        );
-      } else {
-        return res.status(401).json(false, { error: "Invalid credentials" });
-      }
+    if (!user) {
+      return res
+        .status(404)
+        .json(ApiResponse(false, { error: "User not found" }));
     }
+
+    // 3. Compare password (IMPORTANT: await)
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
+      return res
+        .status(401)
+        .json(ApiResponse(false, { error: "Invalid credentials" }));
+    }
+
+    // 4. Generate JWT
+    const token = jwt.sign(
+      {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        username: user.username,
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "7d" }
+    );
+
+    // 5. Success response
+    return res.status(200).json(
+      ApiResponse(
+        true,
+        { message: "Login successful" },
+        {
+          user: {
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            role: user.role,
+          },
+          token,
+        }
+      )
+    );
   } catch (error) {
     return res.status(500).json(
       ApiResponse(false, {
-        error: error.message,
+        error: error.message || "Internal Server Error",
       })
     );
   }
