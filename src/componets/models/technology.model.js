@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
 const technologySchema = new Schema(
   {
@@ -42,12 +42,18 @@ const technologySchema = new Schema(
       metaTitle: {
         type: String,
         trim: true,
-        maxLength: 60, // Google usually cuts off after 60 chars
+        maxLength: 60,
+        default: function () {
+          return `${this.name}`;
+        },
       },
       metaDescription: {
         type: String, // Google Result
         trim: true,
         maxLength: 160, // Recommended length for SEO
+        default: function () {
+          return `${this.description}`;
+        },
       },
       keywords: [
         {
@@ -64,8 +70,12 @@ const technologySchema = new Schema(
     // 5. Categorization (Site Structure/Breadcrumbs )
     topics: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Topic",
+        id: {
+          type: Schema.Types.ObjectId,
+          ref: "Topic",
+        },
+        name: { type: String, default: null },
+        slug: { type: String },
       },
     ],
 
@@ -84,24 +94,31 @@ const technologySchema = new Schema(
 
     createdBy: {
       id: {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
       },
-      user: {
-        name: { type: String },
-        email: { type: String },
-        username: { type: String },
+      author: {
+        name: {
+          type: String,
+        },
+        email: {
+          type: String,
+        },
+        username: {
+          type: String,
+        },
+        icon: {
+          type: String,
+        },
       },
     },
   },
   {
-    timestamps: true, 
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    timestamps: true,
+    timeseries: true,
   }
 );
-
 
 technologySchema.index({ slug: 1, isPublished: 1 });
 
