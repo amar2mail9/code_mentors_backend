@@ -1,4 +1,4 @@
-import { Schema, Types, model } from "mongoose";
+import mongoose, { Schema, Types, model } from "mongoose";
 
 const TopicSchema = new Schema(
   {
@@ -11,7 +11,11 @@ const TopicSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-
+    technology: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Technology",
+      required: true,
+    },
     slug: {
       type: String,
       required: [true, "Slug is required"],
@@ -123,7 +127,7 @@ const TopicSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const TopicModel = model("Topic", TopicSchema);

@@ -8,6 +8,8 @@ import dotenv from "dotenv";
 import { userRouter } from "./componets/routes/user.routes.js";
 import connectDB, { checkConnection } from "./componets/db/db.js";
 import { technologyRouter } from "./componets/routes/technology.routes.js";
+import { topicRouter } from "./componets/routes/topic.routes.js";
+import { tutorialRouter } from "./componets/routes/tutorial.routes.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -66,7 +68,9 @@ app.get("/api/v1/health", (req, res) => {
 
 app.use("/api/v1", userRouter);
 app.use("/api/v1", technologyRouter);
+app.use("/api/v1", topicRouter);
 
+app.use("/api/v1/tutorial", tutorialRouter);
 /*
 |--------------------------------------------------------------------------
                                 Server

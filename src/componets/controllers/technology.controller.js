@@ -173,7 +173,7 @@ export const allPrivateTechnology = async (req, res) => {
       filter.name = { $regex: req.query.search, $options: "i" }; // "i" = case insensitive
     }
     // B. Filter by Status (Published vs Draft)
-    // Check if 'isPublished' is in the URL (it will be a string "true" or "false")
+  
     if (req.query.isPublished !== undefined) {
       // Convert the string "true"/"false" to an actual Boolean
       filter.isPublished = req.query.isPublished === "true";

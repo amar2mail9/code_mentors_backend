@@ -1,89 +1,73 @@
 import mongoose from "mongoose";
 const { Schema, Types } = mongoose;
 
+const DOMAIN = process.env.DOMAIN || "https://yourdomain.com";
+
 const TutorialSchema = new Schema(
   {
     // ===== BASIC CONTENT =====
-    title: {
-      type: String,
-      required: [true, "Tutorial title is required"],
-      trim: true,
-      index: true,
-    },
-
+    title: { type: String, required: true, trim: true, index: true },
     slug: {
       type: String,
-      required: [true, "Slug is required"],
+      required: true,
       unique: true,
       lowercase: true,
-      trim: true,
       index: true,
     },
-
     excerpt: {
       type: String,
       maxlength: 160,
       default: function () {
-        return `${this.title} – step by step tutorial with examples.`;
+        return `${this.title} – step by step tutorial.`;
       },
     },
-
-    content: {
-      type: String,
-      required: [true, "Tutorial content is required"],
-    },
+    content: { type: String, required: true },
 
     // ===== RELATION =====
     topic: {
-      type: Types.ObjectId,
-      ref: "Topic",
-      required: true,
+      _id: { type: Types.ObjectId, ref: "Topic", required: true },
+      name: String,
+      slug: String,
     },
     technology: {
-      type: Types.ObjectId,
-      ref: "Technology",
-      required: true,
+      _id: { type: Types.ObjectId, ref: "Technology", required: true },
+      name: String,
+      slug: String,
     },
 
     // ===== SEO =====
     seo: {
-      title: {
+      metaTitle: {
         type: String,
+        maxlength: 60,
         default: function () {
           return `${this.title} | Complete Guide`;
         },
-        maxlength: 60,
       },
-
       metaDescription: {
         type: String,
+        maxlength: 160,
         default: function () {
           return this.excerpt;
         },
-        maxlength: 160,
       },
-
       keywords: {
-        type: [String],
+        type: [String], // Array of Strings
         default: function () {
-          return [this.title, "tutorial", "guide", "examples", "step by step"];
+          return [this.title, "tutorial", "guide"];
         },
       },
-
       canonicalUrl: {
         type: String,
         default: function () {
-          return `https://yourdomain.com/tutorial/${this.slug}`;
+          return `${DOMAIN}/tutorial/${this.slug}`;
         },
       },
     },
 
     // ===== MEDIA =====
     featuredImage: {
-      url: {
-        type: String,
-        default: "https://yourdomain.com/assets/default-tutorial.png",
-      },
+      url: { type: String, default: `${DOMAIN}/assets/default-tutorial.png` },
       alt: {
         type: String,
         default: function () {
@@ -91,58 +75,25 @@ const TutorialSchema = new Schema(
         },
       },
     },
+    ogImage: { type: String, default: `${DOMAIN}/assets/default-og.png` },
 
-    ogImage: {
-      type: String,
-      default: "https://yourdomain.com/assets/default-og.png",
-    },
+    // ===== METRICS =====
+    views: { type: Number, default: 0 },
+    readingTime: { type: Number, default: 5 },
+    isPublished: { type: Boolean, default: true },
 
-    // ===== STATUS & METRICS =====
-    views: {
-      type: Number,
-      default: 0,
-    },
-
-    readingTime: {
-      type: Number, // minutes
-      default: 5,
-    },
-
-    isPublished: {
-      type: Boolean,
-      default: true,
-    },
-
-    publishedAt: {
-      type: Date,
-      default: Date.now,
-    },
-    // author
+    // ===== AUTHOR =====
     createdBy: {
-      id: {
-        type: Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
+      id: { type: Types.ObjectId, ref: "User", required: true },
       author: {
-        name: {
-          type: String,
-        },
-        email: {
-          type: String,
-        },
-        username: {
-          type: String,
-        },
-        icon: {
-          type: String,
-        },
+        name: String,
+        email: String,
+        username: String,
+        icon: String,
       },
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true },
 );
 
 export const TutorialModel = mongoose.model("Tutorial", TutorialSchema);

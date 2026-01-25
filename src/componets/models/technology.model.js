@@ -17,7 +17,7 @@ const technologySchema = new Schema(
       lowercase: true,
       index: true,
     },
-
+   
     // 2. Main Content
     description: {
       type: String,
@@ -117,7 +117,7 @@ const technologySchema = new Schema(
   {
     timestamps: true,
     timeseries: true,
-  }
+  },
 );
 
 technologySchema.index({ slug: 1, isPublished: 1 });
